@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채팅방</title>
+    <link rel="stylesheet" href="chat-room.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- 헤더 -->
+        <header class="chat-header">
+            <button class="back-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+                </svg>
+            </button>
+            <div class="chat-info">
+                <h1 class="chat-title">김철수</h1>
+                <span class="chat-status">온라인</span>
+            </div>
+            <button class="menu-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="1"/>
+                    <circle cx="12" cy="12" r="1"/>
+                    <circle cx="12" cy="19" r="1"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- 메시지 영역 -->
+        <main class="chat-messages">
+            <!-- 날짜 구분선 -->
+            <div class="date-divider">
+                <span>2025년 1월 22일</span>
+            </div>
+
+            <!-- 상대방 메시지 -->
+            <div class="message received">
+                <div class="message-avatar">
+                    <img src="https://via.placeholder.com/40" alt="프로필">
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        안녕하세요! 오늘 회의 시간 확인 부탁드려요.
+                    </div>
+                    <span class="message-time">오전 10:30</span>
+                </div>
+            </div>
+
+            <!-- 내 메시지 -->
+            <div class="message sent">
+                <div class="message-content">
+                    <div class="message-bubble">
+                        네, 안녕하세요! 오후 2시에 예정되어 있습니다.
+                    </div>
+                    <span class="message-time">오전 10:32</span>
+                </div>
+            </div>
+
+            <!-- 이미지 메시지 -->
+            <div class="message sent">
+                <div class="message-content">
+                    <div class="message-bubble image-message">
+                        <img src="https://via.placeholder.com/200x150" alt="이미지">
+                    </div>
+                    <span class="message-time">오전 10:33</span>
+                </div>
+            </div>
+
+            <!-- 상대방 메시지 -->
+            <div class="message received">
+                <div class="message-avatar">
+                    <img src="https://via.placeholder.com/40" alt="프로필">
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        감사합니다! 회의 자료 미리 공유해주실 수 있나요?
+                    </div>
+                    <span class="message-time">오전 10:35</span>
+                </div>
+            </div>
+
+            <!-- 파일 메시지 -->
+            <div class="message sent">
+                <div class="message-content">
+                    <div class="message-bubble file-message">
+                        <div class="file-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <path d="M14 2v6h6"/>
+                            </svg>
+                        </div>
+                        <div class="file-info">
+                            <span class="file-name">회의자료.pdf</span>
+                            <span class="file-size">2.5MB</span>
+                        </div>
+                    </div>
+                    <span class="message-time">오전 10:40</span>
+                </div>
+            </div>
+
+            <!-- 읽음 표시가 있는 메시지 -->
+            <div class="message sent">
+                <div class="message-content">
+                    <div class="message-bubble">
+                        자료 확인 부탁드립니다!
+                    </div>
+                    <div class="message-info">
+                        <span class="message-time">오전 10:41</span>
+                        <span class="read-receipt">읽음</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 입력 영역 -->
+        <footer class="chat-input">
+            <button class="attach-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+            </button>
+            <div class="input-wrapper">
+                <input type="text" placeholder="메시지를 입력하세요..." class="message-input">
+                <button class="emoji-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </button>
+            </div>
+            <button class="send-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </footer>
+    </div>
+</body>
+</html>
