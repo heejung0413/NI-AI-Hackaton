@@ -15,7 +15,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/calendar" replace />} />
+        <Route path="/" element={<Navigate to="/transcribe" replace />} />
         <Route path="/chat" element={<ChatRoom />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/call" element={<Call />} />
