@@ -1,0 +1,14 @@
+[
+    {
+        "AllowedHeaders": ["*"],
+        "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+        "AllowedOrigins": [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://ec2-54-90-225-252.compute-1.amazonaws.com",
+            "https://ni-ai-hackaton.vercel.app"
+        ],
+        "ExposeHeaders": ["ETag", "x-amz-request-id"],
+        "MaxAgeSeconds": 3000
+    }
+]

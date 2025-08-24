@@ -1,0 +1,28 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowTranscribeAccess",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "transcribe.amazonaws.com"
+            },
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectAcl"
+            ],
+            "Resource": "arn:aws:s3:::ni-ai-hackaton/audio-files/*"
+        },
+        {
+            "Sid": "AllowTranscribePutObject",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "transcribe.amazonaws.com"
+            },
+            "Action": [
+                "s3:PutObject"
+            ],
+            "Resource": "arn:aws:s3:::ni-ai-hackaton/*"
+        }
+    ]
+}

@@ -24,7 +24,7 @@ const ChatRoom = () => {
         "-Bedrock 이슈가 해결되지 않으면 다음 주에 전체 백엔드를 Groq으로 전환하겠습니다",
         "-장기적으로 온프레미스 대응을 위해 오픈소스 모델 최적화 방향으로 가는 게 좋겠습니다",
       ].join("\n"),
-      sender: "other",
+      sender: "me",
       name: "임희정",
       time: "오후 2:32",
       avatar:
@@ -83,6 +83,7 @@ const ChatRoom = () => {
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
+  const [showRawDataPopup, setShowRawDataPopup] = useState(false);
   const messagesEndRef = useRef(null);
 
   // 요약 데이터
@@ -131,6 +132,87 @@ const ChatRoom = () => {
       },
     ],
     nextMeeting: "2025년 8월 29일 오후 2시",
+  };
+
+  // 원본 요약 데이터 (가공되지 않은 JSON 형태)
+  const rawSummaryData = {
+    meeting_id: "MTG_20250822_001",
+    timestamp: "2025-08-22T14:00:00Z",
+    participants: [
+      {
+        user_id: "user_001",
+        name: "한성우",
+        role: "Backend Developer",
+        avatar_url:
+          "https://i.namu.wiki/i/IzZNZMwZo3_qZ1fAHJ6Iu05VMyHxwOuboM-UkIx_Ggtiu9es8sq96g67ojeh23qEw-hCI4oO2STMYhKK5Vi20w.webp",
+      },
+      {
+        user_id: "user_002",
+        name: "김슬예",
+        role: "Frontend Developer",
+        avatar_url:
+          "https://data.onnada.com/character/201102/C4528_2048931622_76016405_2.JPG",
+      },
+      {
+        user_id: "user_003",
+        name: "임희정",
+        role: "QA Engineer",
+        avatar_url:
+          "https://i.namu.wiki/i/0CGPK4s1T2AUebeIYXxDmgvZ5daUjMAPjUwfljMI3_NdjQzsOkurt3K2gKci-xMGYtxDnkS9K5PzSZUWpnkkRw.webp",
+      },
+    ],
+    duration_minutes: 45,
+    raw_transcript: [
+      {
+        speaker: "한성우",
+        timestamp: "14:30:15",
+        content:
+          "Bedrock 연동은 완료했지만 Structured Output과 스트리밍 동시 지원에서 문제가 발생하고 있습니다.",
+      },
+      {
+        speaker: "한성우",
+        timestamp: "14:31:22",
+        content:
+          "현재 스트리밍 답변 API에서 에러가 많이 발생해서 일단 이전 API로 돌려놓았습니다.",
+      },
+      {
+        speaker: "한성우",
+        timestamp: "14:32:45",
+        content:
+          "Groq의 분당 토큰 제한이 25만 TPM이라 프로덕션 환경에서는 엔터프라이즈 계정이 필요할 것 같습니다.",
+      },
+      {
+        speaker: "임희정",
+        timestamp: "14:35:12",
+        content:
+          "Bedrock 이슈가 해결되지 않으면 다음 주에 전체 백엔드를 Groq으로 전환하겠습니다",
+      },
+      {
+        speaker: "김슬예",
+        timestamp: "14:37:30",
+        content:
+          "제품소개서 초안이 완성되었고 팀 피드백을 받아서 내일부터 외부 배포 예정입니다",
+      },
+    ],
+    ai_analysis: {
+      sentiment_score: 0.65,
+      key_topics: [
+        "bedrock_integration",
+        "api_streaming",
+        "groq_migration",
+        "product_launch",
+        "ui_consistency",
+      ],
+      action_items_detected: 3,
+      next_meeting_scheduled: true,
+      meeting_effectiveness_score: 8.2,
+    },
+    metadata: {
+      recording_quality: "high",
+      transcription_accuracy: 94.5,
+      processing_time_ms: 2840,
+      model_version: "summary-ai-v2.1.3",
+    },
   };
 
   const scrollToBottom = () => {
@@ -268,7 +350,39 @@ const ChatRoom = () => {
         </div>
         {summaryCompleted && (
           <div className="header-buttons">
-            <button className="summary-view-button" onClick={() => setShowSummaryPopup(true)}>
+            <button
+              className="json-view-button"
+              onClick={() => setShowRawDataPopup(true)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M14 12c0 1-2 2-4 2s-4-1-4-2 2-2 4-2 4 1 4 2z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <text
+                  x="12"
+                  y="12.8"
+                  textAnchor="middle"
+                  fontSize="4"
+                  fill="currentColor"
+                  fontWeight="bold"
+                  fontFamily="monospace">
+                  {}
+                </text>
+              </svg>
+              <span>원본 데이터 보기</span>
+            </button>
+            <button
+              className="summary-view-button"
+              onClick={() => setShowSummaryPopup(true)}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
@@ -312,24 +426,35 @@ const ChatRoom = () => {
               </svg>
               <span>요약 보기</span>
             </button>
-            <button className="officemail-button" onClick={() => window.location.href = '/officemail'}>
+            <button
+              className="officemail-button"
+              onClick={() => (window.location.href = "/officemail")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
                 <polyline
-                  points="9,22 9,12 15,12 15,22"
+                  points="15,3 21,3 21,9"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
+                <line
+                  x1="10"
+                  y1="14"
+                  x2="21"
+                  y2="3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
-              <span>오피스메일</span>
+              <span>메일 보기</span>
             </button>
           </div>
         )}
@@ -367,11 +492,15 @@ const ChatRoom = () => {
                 <div className="message-header">
                   <div className="message-name">{message.name}</div>
                   {message.sender === "other" && (
-                    <button 
+                    <button
                       className="edit-message-button"
                       onClick={() => handleEditMessage(message)}
                       title="메시지 수정">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none">
                         <path
                           d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
                           stroke="currentColor"
@@ -562,7 +691,9 @@ const ChatRoom = () => {
       {/* 입력 영역 */}
       <div className="input-area">
         <button
-          className={`summary-confirm-button ${isLoading ? "loading" : ""} ${summaryCompleted ? "completed" : ""}`}
+          className={`summary-confirm-button ${isLoading ? "loading" : ""} ${
+            summaryCompleted ? "completed" : ""
+          }`}
           onClick={handleSummaryConfirm}
           disabled={isLoading || summaryCompleted}>
           {isLoading ? (
@@ -571,7 +702,7 @@ const ChatRoom = () => {
               AI가 요약을 생성하고 있습니다...
             </>
           ) : summaryCompleted ? (
-            "요약이 완료되었습니다!"
+            "AI 요약이 완료되었습니다!"
           ) : (
             "이 요약 내용이 맞을까요?"
           )}
@@ -670,11 +801,16 @@ const ChatRoom = () => {
               <h3 className="edit-popup-title">메시지 수정</h3>
               <button className="edit-popup-close" onClick={closeEditPopup}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <path
+                    d="M18 6L6 18M6 6l12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
-            
+
             <div className="edit-popup-content">
               <div className="edit-message-info">
                 <div className="edit-sender-info">
@@ -683,11 +819,15 @@ const ChatRoom = () => {
                     alt="Avatar"
                     className="edit-avatar"
                   />
-                  <span className="edit-sender-name">{editingMessage?.name}</span>
-                  <span className="edit-message-time">{editingMessage?.time}</span>
+                  <span className="edit-sender-name">
+                    {editingMessage?.name}
+                  </span>
+                  <span className="edit-message-time">
+                    {editingMessage?.time}
+                  </span>
                 </div>
               </div>
-              
+
               <div className="edit-form">
                 <label className="edit-label">메시지 내용</label>
                 <textarea
@@ -706,6 +846,87 @@ const ChatRoom = () => {
               </button>
               <button className="edit-save-button" onClick={handleSaveEdit}>
                 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 원본 데이터 팝업 */}
+      {showRawDataPopup && (
+        <div
+          className="raw-data-popup-overlay"
+          onClick={() => setShowRawDataPopup(false)}>
+          <div className="raw-data-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="raw-data-popup-header">
+              <h3 className="raw-data-popup-title">원본 요약 데이터</h3>
+              <button
+                className="raw-data-popup-close"
+                onClick={() => setShowRawDataPopup(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M18 6L6 18M6 6l12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="raw-data-popup-content">
+              <div className="raw-data-info">
+                <div className="raw-data-badge">
+                  <span className="badge-icon">🔍</span>
+                  <span>가공되지 않은 원본 데이터</span>
+                </div>
+                <p className="raw-data-description">
+                  AI가 생성한 실제 요약 데이터를 JSON 형태로 확인할 수 있습니다.
+                </p>
+              </div>
+
+              <div className="raw-data-container">
+                <div className="raw-data-header">
+                  <span className="data-format">JSON</span>
+                  <button
+                    className="copy-button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        JSON.stringify(rawSummaryData, null, 2)
+                      );
+                      alert("클립보드에 복사되었습니다!");
+                    }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                    복사
+                  </button>
+                </div>
+                <pre className="raw-data-content">
+                  <code>{JSON.stringify(rawSummaryData, null, 2)}</code>
+                </pre>
+              </div>
+            </div>
+
+            <div className="raw-data-popup-footer">
+              <button
+                className="raw-data-close-button"
+                onClick={() => setShowRawDataPopup(false)}>
+                닫기
               </button>
             </div>
           </div>

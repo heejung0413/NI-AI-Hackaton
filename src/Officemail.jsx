@@ -1,6 +1,6 @@
 import React from "react";
 import "./Officemail.css";
-import officemailLogo from "./assets/go-to-officemail.png";
+import officemailLogo from "./assets/go-to-mail.png";
 
 const Officemail = () => {
   return (
