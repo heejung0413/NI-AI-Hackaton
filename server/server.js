@@ -24,6 +24,7 @@ app.use(
       "http://ec2-13-125-174-173.ap-northeast-2.compute.amazonaws.com",
       "https://ec2-13-125-174-173.ap-northeast-2.compute.amazonaws.com",
       "https://ni-ai-hackaton-m71ifipus-heejung0413s-projects.vercel.app",
+      "https://ni-ai-hackaton-1ms92zder-heejung0413s-projects.vercel.app",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
