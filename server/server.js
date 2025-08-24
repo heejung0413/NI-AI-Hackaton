@@ -186,6 +186,55 @@ ${text}`
   }
 });
 
+// 오디오 파일을 텍스트로 변환 (간단한 모의 구현)
+app.post('/api/transcribe-audio', upload.single('audio'), async (req, res) => {
+  try {
+    console.log('음성 변환 요청');
+    
+    if (!req.file) {
+      return res.status(400).json({ error: '오디오 파일이 필요합니다.' });
+    }
+
+    // 실제로는 여기서 AWS Transcribe, Google Speech-to-Text, OpenAI Whisper 등을 사용해야 합니다.
+    // 예시를 위해 하드코딩된 텍스트를 반환합니다.
+    const transcribedText = `
+안녕하세요, 저는 김철수 팀장입니다. 오늘 회의의 주요 안건은 다음과 같습니다.
+
+첫째, 신규 프로젝트 진행 상황입니다. 현재 프로젝트는 전체 일정의 65% 정도 진행되었으며, 
+개발팀은 핵심 기능 구현을 완료했습니다. 다만 UI/UX 팀에서 디자인 수정 요청이 있어 
+일정이 약 일주일 정도 지연될 것으로 예상됩니다.
+
+둘째, 예산 집행 현황입니다. 3분기까지 전체 예산의 72%가 집행되었으며, 
+남은 예산으로 4분기 마케팅 캠페인과 인프라 확장을 진행할 예정입니다.
+
+셋째, 인력 충원 계획입니다. 백엔드 개발자 2명과 데이터 분석가 1명을 추가로 채용할 예정이며, 
+다음 주부터 면접을 시작할 계획입니다.
+
+마지막으로 고객 피드백 분석 결과를 공유드리겠습니다. 전반적인 만족도는 4.2점으로 
+전분기 대비 0.3점 상승했습니다. 특히 고객 지원 서비스에 대한 만족도가 크게 개선되었습니다.
+
+질문이 있으시면 말씀해 주세요. 없으시다면 다음 회의는 2주 후 같은 시간에 진행하겠습니다.
+감사합니다.
+    `.trim();
+
+    res.json({
+      success: true,
+      data: {
+        text: transcribedText,
+        duration: "5:32",
+        fileName: req.file.originalname
+      }
+    });
+
+  } catch (error) {
+    console.error('음성 변환 오류:', error);
+    res.status(500).json({
+      error: '음성 변환 중 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
 // 이메일로 요약 전송
 app.post('/api/send-summary-email', async (req, res) => {
   try {

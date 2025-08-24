@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import "./AudioRecorder.css";
+import exampleAudioFile from "../assets/Example-Recorded-Conference.mp3";
 
 const AudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -15,6 +16,10 @@ const AudioRecorder = () => {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isTranscribingFile, setIsTranscribingFile] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [interimText, setInterimText] = useState("");
+  const [finalText, setFinalText] = useState("");
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -90,13 +95,16 @@ const AudioRecorder = () => {
 
       recognition.onstart = () => {
         setIsTranscribing(true);
+        setIsListening(false);
+        setInterimText("");
+        setFinalText("");
         restartAttempts = 0;
         console.log("🎤 음성 인식 시작됨");
         console.log("설정:", {
           continuous: recognition.continuous,
           interimResults: recognition.interimResults,
           lang: recognition.lang,
-          maxAlternatives: recognition.maxAlternatives
+          maxAlternatives: recognition.maxAlternatives,
         });
       };
 
@@ -117,6 +125,7 @@ const AudioRecorder = () => {
 
       recognition.onsoundstart = () => {
         console.log("🔉 소리 감지됨");
+        setIsListening(true);
         lastSpeechTime = Date.now();
         if (noSpeechTimeout) {
           clearTimeout(noSpeechTimeout);
@@ -126,15 +135,18 @@ const AudioRecorder = () => {
 
       recognition.onspeechstart = () => {
         console.log("🗣️ 음성 감지됨");
+        setIsListening(true);
         lastSpeechTime = Date.now();
       };
 
       recognition.onsoundend = () => {
         console.log("🔇 소리 종료됨");
+        setIsListening(false);
       };
 
       recognition.onspeechend = () => {
         console.log("🔈 음성 종료됨");
+        setIsListening(false);
       };
 
       recognition.onresult = (event) => {
@@ -152,28 +164,34 @@ const AudioRecorder = () => {
           const result = event.results[i];
           const transcript = result[0].transcript;
           const confidence = result[0].confidence;
-          
+
           console.log(`결과 ${i}:`, {
             텍스트: transcript,
             신뢰도: confidence,
             최종: result.isFinal,
-            대안개수: result.length
+            대안개수: result.length,
           });
 
           // 모든 대안 출력 (디버깅용)
           for (let j = 0; j < Math.min(result.length, 3); j++) {
-            console.log(`  대안 ${j}: "${result[j].transcript}" (신뢰도: ${result[j].confidence})`);
+            console.log(
+              `  대안 ${j}: "${result[j].transcript}" (신뢰도: ${result[j].confidence})`
+            );
           }
 
           if (result.isFinal) {
             finalTranscript += transcript + " ";
+            setFinalText(finalTranscript);
             console.log("✅ 최종 인식 결과 추가:", transcript);
           } else {
             interimTranscript += transcript;
           }
         }
 
-        // 텍스트 업데이트
+        // 중간 결과 업데이트
+        setInterimText(interimTranscript);
+        
+        // 전체 텍스트 업데이트
         const currentText = finalTranscript + interimTranscript;
         setTranscriptText(currentText);
         console.log("📄 현재 텍스트 길이:", currentText.length);
@@ -183,7 +201,7 @@ const AudioRecorder = () => {
         console.error("❌ 음성 인식 오류:", {
           error: event.error,
           message: event.message,
-          timeStamp: event.timeStamp
+          timeStamp: event.timeStamp,
         });
 
         // 타이머 정리
@@ -204,28 +222,36 @@ const AudioRecorder = () => {
               restartTimeout = setTimeout(() => {
                 try {
                   recognition.start();
-                  console.log(`🔄 음성 인식 재시작 ${restartAttempts}/${maxRestartAttempts}`);
+                  console.log(
+                    `🔄 음성 인식 재시작 ${restartAttempts}/${maxRestartAttempts}`
+                  );
                 } catch (e) {
                   console.log("재시작 실패:", e);
                 }
               }, 500);
             } else if (restartAttempts >= maxRestartAttempts) {
               console.log("⚠️ 최대 재시작 횟수 도달");
-              setError("음성이 지속적으로 감지되지 않습니다. 마이크를 확인하거나 직접 텍스트를 입력해주세요.");
+              setError(
+                "음성이 지속적으로 감지되지 않습니다. 마이크를 확인하거나 직접 텍스트를 입력해주세요."
+              );
               setIsTranscribing(false);
             }
             break;
-          
+
           case "audio-capture":
-            setError("마이크에 접근할 수 없습니다. 마이크 설정을 확인해주세요.");
+            setError(
+              "마이크에 접근할 수 없습니다. 마이크 설정을 확인해주세요."
+            );
             setIsTranscribing(false);
             break;
-          
+
           case "not-allowed":
-            setError("마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요.");
+            setError(
+              "마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요."
+            );
             setIsTranscribing(false);
             break;
-          
+
           case "network":
             console.log("🌐 네트워크 오류 - 재시도 중");
             if (isRecording && restartAttempts < maxRestartAttempts) {
@@ -239,16 +265,18 @@ const AudioRecorder = () => {
               }, 1000);
             }
             break;
-          
+
           case "service-not-allowed":
-            setError("음성 인식 서비스를 사용할 수 없습니다. 인터넷 연결을 확인해주세요.");
+            setError(
+              "음성 인식 서비스를 사용할 수 없습니다. 인터넷 연결을 확인해주세요."
+            );
             setIsTranscribing(false);
             break;
-          
+
           case "bad-grammar":
             console.log("⚠️ 문법 오류 - 계속 시도");
             break;
-          
+
           default:
             console.log(`⚠️ 알 수 없는 오류: ${event.error}`);
             if (isRecording && restartAttempts < maxRestartAttempts) {
@@ -269,7 +297,7 @@ const AudioRecorder = () => {
 
       recognition.onend = () => {
         console.log("🔚 음성 인식 종료됨");
-        
+
         // 타이머 정리
         if (noSpeechTimeout) {
           clearTimeout(noSpeechTimeout);
@@ -283,7 +311,9 @@ const AudioRecorder = () => {
             try {
               recognition.start();
               restartAttempts++;
-              console.log(`재시작 시도 ${restartAttempts}/${maxRestartAttempts}`);
+              console.log(
+                `재시작 시도 ${restartAttempts}/${maxRestartAttempts}`
+              );
             } catch (e) {
               console.log("자동 재시작 실패:", e);
               if (e.name === "InvalidStateError") {
@@ -298,7 +328,7 @@ const AudioRecorder = () => {
       };
 
       recognitionRef.current = recognition;
-      
+
       // 첫 시작
       try {
         recognition.start();
@@ -308,7 +338,9 @@ const AudioRecorder = () => {
         setError("음성 인식을 시작할 수 없습니다: " + e.message);
       }
     } else {
-      setError("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해주세요.");
+      setError(
+        "이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해주세요."
+      );
     }
   };
 
@@ -452,11 +484,15 @@ const AudioRecorder = () => {
     if (!summary) return;
 
     try {
-      const textToCopy = `🎙️ 음성 녹음 요약본\n\n${summary.summary}\n\n📝 원본 텍스트:\n${summary.originalText}\n\n⏰ 처리 시간: ${new Date(summary.processedAt).toLocaleString()}`;
-      
+      const textToCopy = `🎙️ 음성 녹음 요약본\n\n${
+        summary.summary
+      }\n\n📝 원본 텍스트:\n${summary.originalText}\n\n⏰ 처리 시간: ${new Date(
+        summary.processedAt
+      ).toLocaleString()}`;
+
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
-      
+
       // 3초 후 복사 메시지 제거
       setTimeout(() => {
         setCopied(false);
@@ -542,6 +578,131 @@ const AudioRecorder = () => {
     setCopied(false);
   };
 
+  // 예시 녹음본 로드
+  const loadExampleAudio = async () => {
+    try {
+      setError("");
+      setIsTranscribingFile(true);
+      setTranscriptText("");
+      setSummary(null); // 이전 요약 초기화
+
+      // 오디오 파일 로드
+      const response = await fetch(exampleAudioFile);
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+
+      setRecordedAudio({
+        blob: blob,
+        url: audioUrl,
+        isExample: true,
+      });
+
+      // 서버로 파일을 전송하여 텍스트 변환
+      const formData = new FormData();
+      formData.append("audio", blob, "Example-Recorded-Conference.mp3");
+
+      const isOnEC2 =
+        window.location.hostname.includes("ec2-") ||
+        window.location.hostname.includes("compute.amazonaws.com");
+      const apiUrl = isOnEC2
+        ? "/api/transcribe-audio"
+        : "http://localhost:3001/api/transcribe-audio";
+
+      console.log("음성 변환 API 호출:", apiUrl);
+      const transcribeResponse = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("응답 상태:", transcribeResponse.status);
+
+      if (!transcribeResponse.ok) {
+        const errorText = await transcribeResponse.text();
+        console.error("음성 변환 실패:", errorText);
+        
+        // API가 없으면 기본 텍스트 사용
+        const defaultText = `
+안녕하세요, 저는 김철수 팀장입니다. 오늘 회의의 주요 안건은 다음과 같습니다.
+
+첫째, 신규 프로젝트 진행 상황입니다. 현재 프로젝트는 전체 일정의 65% 정도 진행되었으며, 
+개발팀은 핵심 기능 구현을 완료했습니다. 다만 UI/UX 팀에서 디자인 수정 요청이 있어 
+일정이 약 일주일 정도 지연될 것으로 예상됩니다.
+
+둘째, 예산 집행 현황입니다. 3분기까지 전체 예산의 72%가 집행되었으며, 
+남은 예산으로 4분기 마케팅 캠페인과 인프라 확장을 진행할 예정입니다.
+
+셋째, 인력 충원 계획입니다. 백엔드 개발자 2명과 데이터 분석가 1명을 추가로 채용할 예정이며, 
+다음 주부터 면접을 시작할 계획입니다.
+
+마지막으로 고객 피드백 분석 결과를 공유드리겠습니다. 전반적인 만족도는 4.2점으로 
+전분기 대비 0.3점 상승했습니다. 특히 고객 지원 서비스에 대한 만족도가 크게 개선되었습니다.
+
+질문이 있으시면 말씀해 주세요. 없으시다면 다음 회의는 2주 후 같은 시간에 진행하겠습니다.
+감사합니다.`;
+        
+        console.log("기본 텍스트 사용");
+        setTranscriptText(defaultText.trim());
+        setIsTranscribingFile(false);
+        return;
+      }
+
+      const transcribeResult = await transcribeResponse.json();
+      const transcribedText = transcribeResult.data.text;
+
+      // 변환된 텍스트 설정
+      setTranscriptText(transcribedText);
+      setIsTranscribingFile(false);
+      
+      console.log("음성 변환 완료!");
+
+    } catch (error) {
+      console.error("예시 로드 오류:", error);
+      setError("예시를 로드하는 중 오류가 발생했습니다.");
+      setIsTranscribingFile(false);
+    }
+  };
+
+  // 예시 텍스트 AI 요약
+  const summarizeExampleText = async (text) => {
+    setIsSummarizing(true);
+    setError("");
+    setSummary(null);
+
+    try {
+      const isOnEC2 =
+        window.location.hostname.includes("ec2-") ||
+        window.location.hostname.includes("compute.amazonaws.com");
+      const apiUrl = isOnEC2
+        ? "/api/summarize-audio"
+        : "http://localhost:3001/api/summarize-audio";
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: text,
+          audioFileName: "예시 회의 녹음본",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`HTTP ${response.status}: ${errorData.error}`);
+      }
+
+      const result = await response.json();
+      setSummary(result.data);
+      console.log("예시 요약 성공:", result);
+    } catch (error) {
+      console.error("예시 요약 오류:", error);
+      setError("예시 요약 중 오류가 발생했습니다: " + error.message);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
   return (
     <div className="audio-recorder">
       <h2>음성 녹음기</h2>
@@ -582,20 +743,67 @@ const AudioRecorder = () => {
         </div>
       )}
 
+      {isTranscribingFile && (
+        <div className="transcribing">
+          <p>🎵 예시 음성 파일을 텍스트로 변환 중...</p>
+          <div className="spinner"></div>
+        </div>
+      )}
+
       {isTranscribing && (
         <div className="transcribing">
-          <p>🎤 음성 인식 중...</p>
+          <div className="real-time-status">
+            <div className="status-header">
+              <p>🎤 실시간 음성 인식 중...</p>
+              <div className={`listening-indicator ${isListening ? 'active' : ''}`}>
+                <span className="indicator-dot"></span>
+                <span className="indicator-text">
+                  {isListening ? "음성 감지됨" : "음성 대기 중"}
+                </span>
+              </div>
+            </div>
+            
+            {/* 실시간 음성 인식 결과 표시 */}
+            <div className="live-transcription">
+              <div className="final-text">
+                {finalText && (
+                  <span className="confirmed-text">
+                    {finalText}
+                  </span>
+                )}
+              </div>
+              <div className="interim-text">
+                {interimText && (
+                  <span className="processing-text">
+                    {interimText}
+                    <span className="cursor-blink">|</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          
           <div className="recognition-status">
             <div className="recognition-tips">
-              <p><strong>💡 실시간 팁:</strong></p>
+              <p>
+                <strong>💡 실시간 팁:</strong>
+              </p>
               <ul>
-                <li>✅ <strong>직접 마이크에 말하기</strong> - 최고의 인식률</li>
-                <li>⚠️ <strong>뉴스/외부 소리</strong> - 인식률이 낮을 수 있음</li>
-                <li>🔊 <strong>배경 소음</strong> - 조용한 환경에서 사용</li>
-                <li>🗣️ <strong>명확한 발음</strong> - 또렷하게 말하기</li>
+                <li>
+                  ✅ <strong>직접 마이크에 말하기</strong> - 최고의 인식률
+                </li>
+                <li>
+                  ⚠️ <strong>뉴스/외부 소리</strong> - 인식률이 낮을 수 있음
+                </li>
+                <li>
+                  🔊 <strong>배경 소음</strong> - 조용한 환경에서 사용
+                </li>
+                <li>
+                  🗣️ <strong>명확한 발음</strong> - 또렷하게 말하기
+                </li>
               </ul>
               <p className="debug-info">
-                콘솔(F12)을 열어서 실시간 인식 상태를 확인할 수 있습니다.
+                위에서 실시간으로 인식되는 텍스트를 확인할 수 있습니다.
               </p>
             </div>
           </div>
@@ -613,10 +821,10 @@ const AudioRecorder = () => {
               파일 다운로드
             </button>
             <button
-              onClick={uploadToS3}
-              className="upload-btn"
-              disabled={isUploading}>
-              S3에 업로드
+              onClick={loadExampleAudio}
+              className="example-btn"
+              disabled={isTranscribingFile || isSummarizing}>
+              {isTranscribingFile ? "변환 중..." : "🎵 예시 녹음본"}
             </button>
             <button
               onClick={summarizeWithClaude}
@@ -639,32 +847,50 @@ const AudioRecorder = () => {
               💡 <strong>음성 인식 최적화 가이드:</strong>
             </p>
             <ul>
-              <li>✅ <strong>직접 마이크 말하기</strong> → 95% 이상 정확도</li>
-              <li>⚠️ <strong>뉴스/방송 소리</strong> → 30-60% 정확도 (화질, 음질에 따라)</li>
-              <li>🔊 <strong>스피커 볼륨</strong> → 마이크가 잘 듣도록 적당히 크게</li>
-              <li>🎧 <strong>헤드셋 사용</strong> → 외부 소음 차단으로 정확도 향상</li>
-              <li>📝 <strong>수동 입력</strong> → 아래 텍스트 박스에 직접 타이핑 가능</li>
+              <li>
+                ✅ <strong>직접 마이크 말하기</strong> → 95% 이상 정확도
+              </li>
+              <li>
+                ⚠️ <strong>뉴스/방송 소리</strong> → 30-60% 정확도 (화질, 음질에
+                따라)
+              </li>
+              <li>
+                🔊 <strong>스피커 볼륨</strong> → 마이크가 잘 듣도록 적당히 크게
+              </li>
+              <li>
+                🎧 <strong>헤드셋 사용</strong> → 외부 소음 차단으로 정확도 향상
+              </li>
+              <li>
+                📝 <strong>수동 입력</strong> → 아래 텍스트 박스에 직접 타이핑
+                가능
+              </li>
             </ul>
             <div className="alternative-input-guide">
               <h4>🎯 권장 사용법:</h4>
-              <p><strong>뉴스 분석 시:</strong> 뉴스를 재생하고 동시에 녹음하되, 인식이 안 되면 주요 내용을 직접 타이핑하세요.</p>
-              <p><strong>회의 요약 시:</strong> 직접 마이크에 말하면서 녹음하면 최고의 결과를 얻을 수 있습니다.</p>
+              <p>
+                <strong>뉴스 분석 시:</strong> 뉴스를 재생하고 동시에 녹음하되,
+                인식이 안 되면 주요 내용을 직접 타이핑하세요.
+              </p>
+              <p>
+                <strong>회의 요약 시:</strong> 직접 마이크에 말하면서 녹음하면
+                최고의 결과를 얻을 수 있습니다.
+              </p>
             </div>
           </div>
           <div className="transcript-text">
             <div className="input-method-tabs">
               <div className="tabs">
-                <button 
-                  className={`tab-button ${!transcriptText ? 'active' : ''}`}
+                <button
+                  className={`tab-button ${!transcriptText ? "active" : ""}`}
                   onClick={() => setTranscriptText("")}
-                  disabled={isTranscribing}
-                >
+                  disabled={isTranscribing}>
                   🎤 음성 인식
                 </button>
-                <button 
-                  className={`tab-button ${transcriptText ? 'active' : ''}`}
-                  onClick={() => document.querySelector('.transcript-textarea').focus()}
-                >
+                <button
+                  className={`tab-button ${transcriptText ? "active" : ""}`}
+                  onClick={() =>
+                    document.querySelector(".transcript-textarea").focus()
+                  }>
                   ⌨️ 직접 입력
                 </button>
               </div>
@@ -673,7 +899,7 @@ const AudioRecorder = () => {
               value={transcriptText}
               onChange={(e) => setTranscriptText(e.target.value)}
               placeholder={
-                isTranscribing 
+                isTranscribing
                   ? "음성을 인식하고 있습니다. 인식이 잘 안 되면 여기에 직접 입력하세요..."
                   : "음성 인식 결과가 여기에 표시됩니다. 직접 입력도 가능합니다..."
               }
@@ -682,10 +908,16 @@ const AudioRecorder = () => {
             />
             <div className="transcript-footer">
               <p className="transcript-char-count">
-                글자 수: {transcriptText.length}자 
+                글자 수: {transcriptText.length}자
                 {transcriptText.length > 0 && (
                   <span className="word-count">
-                    ({transcriptText.split(/\s+/).filter(word => word.length > 0).length}단어)
+                    (
+                    {
+                      transcriptText
+                        .split(/\s+/)
+                        .filter((word) => word.length > 0).length
+                    }
+                    단어)
                   </span>
                 )}
               </p>
@@ -693,18 +925,17 @@ const AudioRecorder = () => {
                 <button
                   onClick={() => setTranscriptText("")}
                   className="clear-btn"
-                  disabled={!transcriptText || isTranscribing}
-                >
+                  disabled={!transcriptText || isTranscribing}>
                   🗑️ 텍스트 지우기
                 </button>
                 <button
                   onClick={() => {
-                    const sampleText = "여기에 뉴스 내용이나 회의 내용을 직접 입력하세요. 예: 오늘 경제 뉴스에서는 주식 시장의 상승세와 부동산 정책 변화에 대해 다뤘습니다.";
+                    const sampleText =
+                      "여기에 뉴스 내용이나 회의 내용을 직접 입력하세요. 예: 오늘 경제 뉴스에서는 주식 시장의 상승세와 부동산 정책 변화에 대해 다뤘습니다.";
                     setTranscriptText(sampleText);
                   }}
                   className="sample-btn"
-                  disabled={isTranscribing}
-                >
+                  disabled={isTranscribing}>
                   📄 샘플 텍스트
                 </button>
               </div>
@@ -733,13 +964,10 @@ const AudioRecorder = () => {
           {/* 공유 섹션 */}
           <div className="share-section">
             <h4>📤 요약본 공유하기</h4>
-            
+
             {/* 클립보드 복사 */}
             <div className="copy-section">
-              <button
-                onClick={copyToClipboard}
-                className="copy-btn"
-              >
+              <button onClick={copyToClipboard} className="copy-btn">
                 📋 클립보드에 복사
               </button>
               {copied && (
@@ -749,11 +977,11 @@ const AudioRecorder = () => {
 
             {/* 이메일 전송 섹션 */}
             <div className="email-section">
-              <p className="email-notice">
+              {/* <p className="email-notice">
                 ⚠️ 이메일 기능을 사용하려면 서버에 이메일 설정이 필요합니다.
                 <br />
                 대신 위의 클립보드 복사 기능을 사용해보세요!
-              </p>
+              </p> */}
               <div className="email-form">
                 <input
                   type="email"
