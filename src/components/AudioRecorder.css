@@ -415,6 +415,7 @@
   display: flex;
   align-items: center;
   gap: 15px;
+  justify-content: center;
 }
 
 .copy-btn {
@@ -677,7 +678,8 @@
   gap: 10px;
 }
 
-.clear-btn, .sample-btn {
+.clear-btn,
+.sample-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -705,7 +707,8 @@
   background-color: #545b62;
 }
 
-.clear-btn:disabled, .sample-btn:disabled {
+.clear-btn:disabled,
+.sample-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -750,7 +753,8 @@
 }
 
 @keyframes pulse-border {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #ff5722;
     box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.4);
   }
@@ -761,7 +765,8 @@
 }
 
 @keyframes pulse-icon {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.8;
   }
@@ -772,7 +777,8 @@
 }
 
 @keyframes listening-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -829,7 +835,7 @@
 }
 
 .processing-text::after {
-  content: '';
+  content: "";
   display: inline-block;
   width: 2px;
   height: 20px;
@@ -840,10 +846,12 @@
 }
 
 @keyframes cursor-blink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }

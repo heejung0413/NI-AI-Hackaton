@@ -32,8 +32,17 @@ const AudioRecorder = () => {
       setRecordedAudio(null);
       setTranscriptText("");
       setSummary(null);
+      setFinalText("");
+      setInterimText("");
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000
+        } 
+      });
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: "audio/webm",
@@ -56,8 +65,8 @@ const AudioRecorder = () => {
         setRecordedAudio({ blob: audioBlob, url: audioUrl });
       };
 
-      // 음성 인식 시작
-      setTimeout(() => startSpeechRecognition(), 500);
+      // 음성 인식 시작 (지연 시작)
+      setTimeout(() => startSpeechRecognition(), 1000);
 
       mediaRecorder.start();
       setIsRecording(true);
@@ -67,280 +76,163 @@ const AudioRecorder = () => {
     }
   };
 
-  // 음성 인식 시작
+  // 개선된 음성 인식 시작
   const startSpeechRecognition = () => {
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      setError("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저를 사용해주세요.");
+      return;
+    }
 
-      // 더 세밀한 설정
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "ko-KR";
-      recognition.maxAlternatives = 5;
-      recognition.grammars = null;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
 
-      // 음성 감도 조정을 위한 설정
-      if (recognition.serviceURI) {
-        recognition.serviceURI = "wss://www.google.com/speech-api/v2/recognize";
+    // 최적화된 설정
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "ko-KR";
+    recognition.maxAlternatives = 1;
+
+    let finalTranscript = "";
+    let isRestarting = false;
+    let restartAttempts = 0;
+    const maxRestartAttempts = 5;
+
+    recognition.onstart = () => {
+      console.log("🎤 음성 인식 시작");
+      setIsTranscribing(true);
+      setError("");
+      isRestarting = false;
+    };
+
+    recognition.onaudiostart = () => {
+      console.log("🔊 오디오 캡처 시작");
+      setError("");
+    };
+
+    recognition.onsoundstart = () => {
+      console.log("🔉 소리 감지됨");
+      setIsListening(true);
+    };
+
+    recognition.onsoundend = () => {
+      console.log("🔇 소리 종료됨");
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      console.log("📝 음성 인식 결과 수신");
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript;
+
+        if (result.isFinal) {
+          finalTranscript += transcript + " ";
+          console.log("✅ 최종 결과:", transcript);
+        } else {
+          interimTranscript += transcript;
+          console.log("⏳ 임시 결과:", transcript);
+        }
       }
 
-      let finalTranscript = "";
-      let noSpeechTimeout = null;
-      let restartTimeout = null;
-      let lastSpeechTime = Date.now();
-      let restartAttempts = 0;
-      const maxRestartAttempts = 10;
+      // 실시간 업데이트
+      setFinalText(finalTranscript);
+      setInterimText(interimTranscript);
+      
+      // 최종 텍스트만 transcriptText에 저장
+      if (finalTranscript.trim()) {
+        setTranscriptText(finalTranscript.trim());
+      }
+    };
 
-      recognition.onstart = () => {
-        setIsTranscribing(true);
-        setIsListening(false);
-        setInterimText("");
-        setFinalText("");
-        restartAttempts = 0;
-        console.log("🎤 음성 인식 시작됨");
-        console.log("설정:", {
-          continuous: recognition.continuous,
-          interimResults: recognition.interimResults,
-          lang: recognition.lang,
-          maxAlternatives: recognition.maxAlternatives,
-        });
-      };
+    recognition.onerror = (event) => {
+      console.error("❌ 음성 인식 오류:", event.error);
 
-      recognition.onaudiostart = () => {
-        console.log("🔊 오디오 캡처 시작됨");
-        // 오디오가 시작되면 무음 타이머 시작
-        noSpeechTimeout = setTimeout(() => {
-          console.log("⏰ 15초간 음성 없음 - 재시작 시도");
-          if (recognition && isRecording) {
-            try {
-              recognition.stop();
-            } catch (e) {
-              console.log("재시작을 위한 중지 실패:", e);
-            }
-          }
-        }, 15000);
-      };
-
-      recognition.onsoundstart = () => {
-        console.log("🔉 소리 감지됨");
-        setIsListening(true);
-        lastSpeechTime = Date.now();
-        if (noSpeechTimeout) {
-          clearTimeout(noSpeechTimeout);
-          noSpeechTimeout = null;
-        }
-      };
-
-      recognition.onspeechstart = () => {
-        console.log("🗣️ 음성 감지됨");
-        setIsListening(true);
-        lastSpeechTime = Date.now();
-      };
-
-      recognition.onsoundend = () => {
-        console.log("🔇 소리 종료됨");
-        setIsListening(false);
-      };
-
-      recognition.onspeechend = () => {
-        console.log("🔈 음성 종료됨");
-        setIsListening(false);
-      };
-
-      recognition.onresult = (event) => {
-        console.log("📝 음성 인식 결과:", event);
-        let interimTranscript = "";
-        lastSpeechTime = Date.now();
-
-        // 타이머 리셋
-        if (noSpeechTimeout) {
-          clearTimeout(noSpeechTimeout);
-          noSpeechTimeout = null;
-        }
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          const transcript = result[0].transcript;
-          const confidence = result[0].confidence;
-
-          console.log(`결과 ${i}:`, {
-            텍스트: transcript,
-            신뢰도: confidence,
-            최종: result.isFinal,
-            대안개수: result.length,
-          });
-
-          // 모든 대안 출력 (디버깅용)
-          for (let j = 0; j < Math.min(result.length, 3); j++) {
-            console.log(
-              `  대안 ${j}: "${result[j].transcript}" (신뢰도: ${result[j].confidence})`
-            );
-          }
-
-          if (result.isFinal) {
-            finalTranscript += transcript + " ";
-            setFinalText(finalTranscript);
-            console.log("✅ 최종 인식 결과 추가:", transcript);
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        // 중간 결과 업데이트
-        setInterimText(interimTranscript);
-        
-        // 전체 텍스트 업데이트
-        const currentText = finalTranscript + interimTranscript;
-        setTranscriptText(currentText);
-        console.log("📄 현재 텍스트 길이:", currentText.length);
-      };
-
-      recognition.onerror = (event) => {
-        console.error("❌ 음성 인식 오류:", {
-          error: event.error,
-          message: event.message,
-          timeStamp: event.timeStamp,
-        });
-
-        // 타이머 정리
-        if (noSpeechTimeout) {
-          clearTimeout(noSpeechTimeout);
-          noSpeechTimeout = null;
-        }
-        if (restartTimeout) {
-          clearTimeout(restartTimeout);
-          restartTimeout = null;
-        }
-
-        switch (event.error) {
-          case "no-speech":
-            console.log("🔇 음성 미감지 - 자동 재시작 시도");
-            if (isRecording && restartAttempts < maxRestartAttempts) {
-              restartAttempts++;
-              restartTimeout = setTimeout(() => {
+      switch (event.error) {
+        case "no-speech":
+          console.log("🔇 음성 미감지 - 재시작");
+          if (isRecording && !isRestarting && restartAttempts < maxRestartAttempts) {
+            isRestarting = true;
+            restartAttempts++;
+            setTimeout(() => {
+              if (isRecording) {
                 try {
                   recognition.start();
-                  console.log(
-                    `🔄 음성 인식 재시작 ${restartAttempts}/${maxRestartAttempts}`
-                  );
+                  console.log(`🔄 음성 인식 재시작 ${restartAttempts}/${maxRestartAttempts}`);
                 } catch (e) {
                   console.log("재시작 실패:", e);
                 }
-              }, 500);
-            } else if (restartAttempts >= maxRestartAttempts) {
-              console.log("⚠️ 최대 재시작 횟수 도달");
-              setError(
-                "음성이 지속적으로 감지되지 않습니다. 마이크를 확인하거나 직접 텍스트를 입력해주세요."
-              );
-              setIsTranscribing(false);
-            }
-            break;
+              }
+            }, 100);
+          }
+          break;
 
-          case "audio-capture":
-            setError(
-              "마이크에 접근할 수 없습니다. 마이크 설정을 확인해주세요."
-            );
-            setIsTranscribing(false);
-            break;
+        case "audio-capture":
+          setError("마이크에 접근할 수 없습니다. 마이크 설정을 확인해주세요.");
+          setIsTranscribing(false);
+          break;
 
-          case "not-allowed":
-            setError(
-              "마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요."
-            );
-            setIsTranscribing(false);
-            break;
+        case "not-allowed":
+          setError("마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요.");
+          setIsTranscribing(false);
+          break;
 
-          case "network":
-            console.log("🌐 네트워크 오류 - 재시도 중");
-            if (isRecording && restartAttempts < maxRestartAttempts) {
-              restartAttempts++;
-              restartTimeout = setTimeout(() => {
+        case "network":
+          console.log("🌐 네트워크 오류 - 재시도");
+          if (isRecording && !isRestarting && restartAttempts < maxRestartAttempts) {
+            isRestarting = true;
+            restartAttempts++;
+            setTimeout(() => {
+              if (isRecording) {
                 try {
                   recognition.start();
                 } catch (e) {
                   console.log("네트워크 오류 후 재시작 실패:", e);
                 }
-              }, 1000);
-            }
-            break;
+              }
+            }, 1000);
+          }
+          break;
 
-          case "service-not-allowed":
-            setError(
-              "음성 인식 서비스를 사용할 수 없습니다. 인터넷 연결을 확인해주세요."
-            );
-            setIsTranscribing(false);
-            break;
+        default:
+          console.log(`⚠️ 기타 오류: ${event.error}`);
+          break;
+      }
+    };
 
-          case "bad-grammar":
-            console.log("⚠️ 문법 오류 - 계속 시도");
-            break;
+    recognition.onend = () => {
+      console.log("🔚 음성 인식 종료");
 
-          default:
-            console.log(`⚠️ 알 수 없는 오류: ${event.error}`);
-            if (isRecording && restartAttempts < maxRestartAttempts) {
-              restartAttempts++;
-              restartTimeout = setTimeout(() => {
-                try {
-                  recognition.start();
-                } catch (e) {
-                  console.log("알 수 없는 오류 후 재시작 실패:", e);
-                }
-              }, 1000);
-            } else {
-              setIsTranscribing(false);
-            }
-            break;
-        }
-      };
-
-      recognition.onend = () => {
-        console.log("🔚 음성 인식 종료됨");
-
-        // 타이머 정리
-        if (noSpeechTimeout) {
-          clearTimeout(noSpeechTimeout);
-          noSpeechTimeout = null;
-        }
-
-        // 녹음 중이면 자동으로 재시작
-        if (isRecording && restartAttempts < maxRestartAttempts) {
-          console.log("🔄 녹음 중이므로 자동 재시작");
-          restartTimeout = setTimeout(() => {
+      // 녹음 중이고 재시작 중이 아니면 자동 재시작
+      if (isRecording && !isRestarting && restartAttempts < maxRestartAttempts) {
+        console.log("🔄 자동 재시작");
+        isRestarting = true;
+        setTimeout(() => {
+          if (isRecording) {
             try {
               recognition.start();
               restartAttempts++;
-              console.log(
-                `재시작 시도 ${restartAttempts}/${maxRestartAttempts}`
-              );
             } catch (e) {
               console.log("자동 재시작 실패:", e);
-              if (e.name === "InvalidStateError") {
-                console.log("이미 시작된 상태입니다.");
-              }
             }
-          }, 300);
-        } else {
-          setIsTranscribing(false);
-          console.log("🏁 음성 인식 완전 종료");
-        }
-      };
-
-      recognitionRef.current = recognition;
-
-      // 첫 시작
-      try {
-        recognition.start();
-        console.log("🚀 음성 인식 첫 시작");
-      } catch (e) {
-        console.error("음성 인식 시작 실패:", e);
-        setError("음성 인식을 시작할 수 없습니다: " + e.message);
+          }
+        }, 100);
+      } else {
+        setIsTranscribing(false);
+        console.log("🏁 음성 인식 완전 종료");
       }
-    } else {
-      setError(
-        "이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해주세요."
-      );
+    };
+
+    recognitionRef.current = recognition;
+
+    // 첫 시작
+    try {
+      recognition.start();
+      console.log("🚀 음성 인식 첫 시작");
+    } catch (e) {
+      console.error("음성 인식 시작 실패:", e);
+      setError("음성 인식을 시작할 수 없습니다: " + e.message);
     }
   };
 
@@ -357,7 +249,11 @@ const AudioRecorder = () => {
     // 음성 인식 정지
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+      recognitionRef.current = null;
     }
+
+    setIsTranscribing(false);
+    setIsListening(false);
   };
 
   // 오디오 파일 다운로드
@@ -387,31 +283,20 @@ const AudioRecorder = () => {
       const formData = new FormData();
       formData.append("audio", recordedAudio.blob, "recording.webm");
 
-      console.log("FormData 생성:", formData.get("audio"));
-
-      // Nginx 프록시를 통해 API 호출
       const isOnEC2 =
         window.location.hostname.includes("ec2-") ||
         window.location.hostname.includes("compute.amazonaws.com");
       const apiUrl = isOnEC2
-        ? "/api/upload-audio" // Nginx 프록시 경로
+        ? "/api/upload-audio"
         : "http://localhost:3001/api/upload-audio";
-
-      console.log("API URL:", apiUrl);
-      console.log("현재 hostname:", window.location.hostname);
-      console.log("EC2 환경:", isOnEC2);
 
       const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log("Error response:", errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
@@ -419,15 +304,8 @@ const AudioRecorder = () => {
       setUploadResult(result);
       console.log("업로드 성공:", result);
     } catch (error) {
-      console.error("업로드 오류 상세:", error);
-      if (
-        error.name === "TypeError" &&
-        error.message.includes("Failed to fetch")
-      ) {
-        setError("네트워크 연결 오류: 서버에 연결할 수 없습니다.");
-      } else {
-        setError("S3 업로드 중 오류가 발생했습니다: " + error.message);
-      }
+      console.error("업로드 오류:", error);
+      setError("S3 업로드 중 오류가 발생했습니다: " + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -493,7 +371,6 @@ const AudioRecorder = () => {
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
 
-      // 3초 후 복사 메시지 제거
       setTimeout(() => {
         setCopied(false);
       }, 3000);
@@ -510,7 +387,6 @@ const AudioRecorder = () => {
       return;
     }
 
-    // 이메일 유효성 검사
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailAddress)) {
       setError("올바른 이메일 주소를 입력해주세요.");
@@ -551,7 +427,6 @@ const AudioRecorder = () => {
       setEmailSent(true);
       console.log("이메일 전송 성공:", result);
 
-      // 3초 후 성공 메시지 제거
       setTimeout(() => {
         setEmailSent(false);
       }, 3000);
@@ -576,6 +451,8 @@ const AudioRecorder = () => {
     setEmailAddress("");
     setEmailSent(false);
     setCopied(false);
+    setFinalText("");
+    setInterimText("");
   };
 
   // 예시 녹음본 로드
@@ -584,9 +461,8 @@ const AudioRecorder = () => {
       setError("");
       setIsTranscribingFile(true);
       setTranscriptText("");
-      setSummary(null); // 이전 요약 초기화
+      setSummary(null);
 
-      // 오디오 파일 로드
       const response = await fetch(exampleAudioFile);
       const blob = await response.blob();
       const audioUrl = URL.createObjectURL(blob);
@@ -597,7 +473,6 @@ const AudioRecorder = () => {
         isExample: true,
       });
 
-      // 서버로 파일을 전송하여 텍스트 변환
       const formData = new FormData();
       formData.append("audio", blob, "Example-Recorded-Conference.mp3");
 
@@ -608,21 +483,13 @@ const AudioRecorder = () => {
         ? "/api/transcribe-audio"
         : "http://localhost:3001/api/transcribe-audio";
 
-      console.log("음성 변환 API 호출:", apiUrl);
       const transcribeResponse = await fetch(apiUrl, {
         method: "POST",
         body: formData,
       });
 
-      console.log("응답 상태:", transcribeResponse.status);
-
       if (!transcribeResponse.ok) {
-        const errorText = await transcribeResponse.text();
-        console.error("음성 변환 실패:", errorText);
-        
-        // API가 없으면 기본 텍스트 사용
-        const defaultText = `
-안녕하세요, 저는 김철수 팀장입니다. 오늘 회의의 주요 안건은 다음과 같습니다.
+        const defaultText = `안녕하세요, 저는 김철수 팀장입니다. 오늘 회의의 주요 안건은 다음과 같습니다.
 
 첫째, 신규 프로젝트 진행 상황입니다. 현재 프로젝트는 전체 일정의 65% 정도 진행되었으며, 
 개발팀은 핵심 기능 구현을 완료했습니다. 다만 UI/UX 팀에서 디자인 수정 요청이 있어 
@@ -640,7 +507,6 @@ const AudioRecorder = () => {
 질문이 있으시면 말씀해 주세요. 없으시다면 다음 회의는 2주 후 같은 시간에 진행하겠습니다.
 감사합니다.`;
         
-        console.log("기본 텍스트 사용");
         setTranscriptText(defaultText.trim());
         setIsTranscribingFile(false);
         return;
@@ -649,7 +515,6 @@ const AudioRecorder = () => {
       const transcribeResult = await transcribeResponse.json();
       const transcribedText = transcribeResult.data.text;
 
-      // 변환된 텍스트 설정
       setTranscriptText(transcribedText);
       setIsTranscribingFile(false);
       
@@ -662,155 +527,90 @@ const AudioRecorder = () => {
     }
   };
 
-  // 예시 텍스트 AI 요약
-  const summarizeExampleText = async (text) => {
-    setIsSummarizing(true);
-    setError("");
-    setSummary(null);
-
-    try {
-      const isOnEC2 =
-        window.location.hostname.includes("ec2-") ||
-        window.location.hostname.includes("compute.amazonaws.com");
-      const apiUrl = isOnEC2
-        ? "/api/summarize-audio"
-        : "http://localhost:3001/api/summarize-audio";
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: text,
-          audioFileName: "예시 회의 녹음본",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`HTTP ${response.status}: ${errorData.error}`);
-      }
-
-      const result = await response.json();
-      setSummary(result.data);
-      console.log("예시 요약 성공:", result);
-    } catch (error) {
-      console.error("예시 요약 오류:", error);
-      setError("예시 요약 중 오류가 발생했습니다: " + error.message);
-    } finally {
-      setIsSummarizing(false);
-    }
-  };
-
   return (
     <div className="audio-recorder">
-      <h2>음성 녹음기</h2>
+      <h2>🎙️ 실시간 음성 인식기</h2>
 
       <div className="recorder-controls">
         <button
           onClick={isRecording ? stopRecording : startRecording}
           className={isRecording ? "recording" : ""}
           disabled={isUploading}>
-          {isRecording ? "녹음 중지" : "녹음 시작"}
+          {isRecording ? "🔴 녹음 중지" : "🎤 녹음 시작"}
         </button>
       </div>
 
       {error && (
         <div className="error">
-          <p>{error}</p>
+          <p>❌ {error}</p>
         </div>
       )}
 
-      {isUploading && (
-        <div className="uploading">
-          <p>S3에 업로드 중...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-
-      {isSummarizing && (
-        <div className="summarizing">
-          <p>Claude AI로 요약 생성 중...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-
-      {isSendingEmail && (
-        <div className="sending-email">
-          <p>이메일 전송 중...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-
-      {isTranscribingFile && (
-        <div className="transcribing">
-          <p>🎵 예시 음성 파일을 텍스트로 변환 중...</p>
-          <div className="spinner"></div>
-        </div>
-      )}
-
+      {/* 실시간 음성 인식 상태 */}
       {isTranscribing && (
         <div className="transcribing">
           <div className="real-time-status">
             <div className="status-header">
               <p>🎤 실시간 음성 인식 중...</p>
               <div className={`listening-indicator ${isListening ? 'active' : ''}`}>
-                <span className="indicator-dot"></span>
-                <span className="indicator-text">
+                <span className="status-icon">🎵</span>
+                <span className="status-text">
                   {isListening ? "음성 감지됨" : "음성 대기 중"}
                 </span>
               </div>
             </div>
             
             {/* 실시간 음성 인식 결과 표시 */}
-            <div className="live-transcription">
-              <div className="final-text">
-                {finalText && (
-                  <span className="confirmed-text">
-                    {finalText}
-                  </span>
-                )}
-              </div>
-              <div className="interim-text">
-                {interimText && (
-                  <span className="processing-text">
-                    {interimText}
-                    <span className="cursor-blink">|</span>
-                  </span>
-                )}
+            <div className={`live-transcription ${isListening ? 'active' : ''}`}>
+              {finalText || interimText ? (
+                <>
+                  {finalText && (
+                    <div className="final-text">
+                      <span className="confirmed-text">{finalText}</span>
+                    </div>
+                  )}
+                  {interimText && (
+                    <div className="interim-text">
+                      <span className="processing-text">{interimText}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="transcription-placeholder">
+                  음성을 말씀해주세요. 실시간으로 텍스트가 표시됩니다.
+                </div>
+              )}
+              
+              <div className="transcription-stats">
+                <div className="stat-item">
+                  <span>📝</span>
+                  <span className="stat-value">{finalText.length + interimText.length}자</span>
+                </div>
+                <div className="stat-item">
+                  <span>⚡</span>
+                  <span className="stat-value">실시간</span>
+                </div>
+                <div className="stat-item">
+                  <span>🎯</span>
+                  <span className="stat-value">{isListening ? "인식중" : "대기중"}</span>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="recognition-status">
-            <div className="recognition-tips">
-              <p>
-                <strong>💡 실시간 팁:</strong>
-              </p>
-              <ul>
-                <li>
-                  ✅ <strong>직접 마이크에 말하기</strong> - 최고의 인식률
-                </li>
-                <li>
-                  ⚠️ <strong>뉴스/외부 소리</strong> - 인식률이 낮을 수 있음
-                </li>
-                <li>
-                  🔊 <strong>배경 소음</strong> - 조용한 환경에서 사용
-                </li>
-                <li>
-                  🗣️ <strong>명확한 발음</strong> - 또렷하게 말하기
-                </li>
-              </ul>
-              <p className="debug-info">
-                위에서 실시간으로 인식되는 텍스트를 확인할 수 있습니다.
-              </p>
-            </div>
+          <div className="recognition-tips">
+            <p><strong>💡 음성 인식 팁:</strong></p>
+            <ul>
+              <li>✅ <strong>마이크에 가까이</strong> - 명확한 음성으로</li>
+              <li>🔊 <strong>조용한 환경</strong> - 배경소음 최소화</li>
+              <li>🗣️ <strong>또렷한 발음</strong> - 천천히 말하기</li>
+              <li>⏸️ <strong>문장 단위</strong> - 자연스러운 쉼표</li>
+            </ul>
           </div>
-          <div className="spinner"></div>
         </div>
       )}
 
+      {/* 기존 UI 컴포넌트들... */}
       {recordedAudio && (
         <div className="recorded-audio">
           <h3>녹음 완료!</h3>
@@ -818,7 +618,7 @@ const AudioRecorder = () => {
 
           <div className="audio-controls">
             <button onClick={downloadAudio} className="download-btn">
-              파일 다운로드
+              📁 파일 다운로드
             </button>
             <button
               onClick={loadExampleAudio}
@@ -830,142 +630,51 @@ const AudioRecorder = () => {
               onClick={summarizeWithClaude}
               className="summarize-btn"
               disabled={isSummarizing || !transcriptText.trim()}>
-              Claude AI 요약
+              🤖 Claude AI 요약
             </button>
             <button onClick={resetRecording} className="reset-btn">
-              새 녹음
+              🔄 새 녹음
             </button>
           </div>
         </div>
       )}
 
-      {(transcriptText || recordedAudio) && (
+      {/* 텍스트 영역 */}
+      {transcriptText && (
         <div className="transcript-section">
-          <h3>음성 인식 결과:</h3>
-          <div className="transcript-help">
-            <p>
-              💡 <strong>음성 인식 최적화 가이드:</strong>
+          <h3>📝 음성 인식 결과:</h3>
+          <textarea
+            value={transcriptText}
+            onChange={(e) => setTranscriptText(e.target.value)}
+            placeholder="음성 인식 결과가 여기에 표시됩니다..."
+            rows="8"
+            className="transcript-textarea"
+          />
+          <div className="transcript-footer">
+            <p className="transcript-char-count">
+              글자 수: {transcriptText.length}자
             </p>
-            <ul>
-              <li>
-                ✅ <strong>직접 마이크 말하기</strong> → 95% 이상 정확도
-              </li>
-              <li>
-                ⚠️ <strong>뉴스/방송 소리</strong> → 30-60% 정확도 (화질, 음질에
-                따라)
-              </li>
-              <li>
-                🔊 <strong>스피커 볼륨</strong> → 마이크가 잘 듣도록 적당히 크게
-              </li>
-              <li>
-                🎧 <strong>헤드셋 사용</strong> → 외부 소음 차단으로 정확도 향상
-              </li>
-              <li>
-                📝 <strong>수동 입력</strong> → 아래 텍스트 박스에 직접 타이핑
-                가능
-              </li>
-            </ul>
-            <div className="alternative-input-guide">
-              <h4>🎯 권장 사용법:</h4>
-              <p>
-                <strong>뉴스 분석 시:</strong> 뉴스를 재생하고 동시에 녹음하되,
-                인식이 안 되면 주요 내용을 직접 타이핑하세요.
-              </p>
-              <p>
-                <strong>회의 요약 시:</strong> 직접 마이크에 말하면서 녹음하면
-                최고의 결과를 얻을 수 있습니다.
-              </p>
-            </div>
-          </div>
-          <div className="transcript-text">
-            <div className="input-method-tabs">
-              <div className="tabs">
-                <button
-                  className={`tab-button ${!transcriptText ? "active" : ""}`}
-                  onClick={() => setTranscriptText("")}
-                  disabled={isTranscribing}>
-                  🎤 음성 인식
-                </button>
-                <button
-                  className={`tab-button ${transcriptText ? "active" : ""}`}
-                  onClick={() =>
-                    document.querySelector(".transcript-textarea").focus()
-                  }>
-                  ⌨️ 직접 입력
-                </button>
-              </div>
-            </div>
-            <textarea
-              value={transcriptText}
-              onChange={(e) => setTranscriptText(e.target.value)}
-              placeholder={
-                isTranscribing
-                  ? "음성을 인식하고 있습니다. 인식이 잘 안 되면 여기에 직접 입력하세요..."
-                  : "음성 인식 결과가 여기에 표시됩니다. 직접 입력도 가능합니다..."
-              }
-              rows="8"
-              className="transcript-textarea"
-            />
-            <div className="transcript-footer">
-              <p className="transcript-char-count">
-                글자 수: {transcriptText.length}자
-                {transcriptText.length > 0 && (
-                  <span className="word-count">
-                    (
-                    {
-                      transcriptText
-                        .split(/\s+/)
-                        .filter((word) => word.length > 0).length
-                    }
-                    단어)
-                  </span>
-                )}
-              </p>
-              <div className="transcript-actions">
-                <button
-                  onClick={() => setTranscriptText("")}
-                  className="clear-btn"
-                  disabled={!transcriptText || isTranscribing}>
-                  🗑️ 텍스트 지우기
-                </button>
-                <button
-                  onClick={() => {
-                    const sampleText =
-                      "여기에 뉴스 내용이나 회의 내용을 직접 입력하세요. 예: 오늘 경제 뉴스에서는 주식 시장의 상승세와 부동산 정책 변화에 대해 다뤘습니다.";
-                    setTranscriptText(sampleText);
-                  }}
-                  className="sample-btn"
-                  disabled={isTranscribing}>
-                  📄 샘플 텍스트
-                </button>
-              </div>
+            <div className="transcript-actions">
+              <button
+                onClick={() => setTranscriptText("")}
+                className="clear-btn"
+                disabled={!transcriptText}>
+                🗑️ 지우기
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* 요약 결과 */}
       {summary && (
         <div className="summary-section">
-          <h3>AI 요약:</h3>
-          <div className="summary-content">
-            <div className="summary-text">{summary.summary}</div>
-            <div className="summary-meta">
-              <p>
-                <strong>처리 시간:</strong>{" "}
-                {new Date(summary.processedAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>원본 텍스트 길이:</strong> {summary.originalText.length}
-                자
-              </p>
-            </div>
-          </div>
-
-          {/* 공유 섹션 */}
+          <h3>🤖 AI 요약:</h3>
+          <div className="summary-text">{summary.summary}</div>
+          
           <div className="share-section">
             <h4>📤 요약본 공유하기</h4>
-
-            {/* 클립보드 복사 */}
+            
             <div className="copy-section">
               <button onClick={copyToClipboard} className="copy-btn">
                 📋 클립보드에 복사
@@ -975,13 +684,8 @@ const AudioRecorder = () => {
               )}
             </div>
 
-            {/* 이메일 전송 섹션 */}
             <div className="email-section">
-              {/* <p className="email-notice">
-                ⚠️ 이메일 기능을 사용하려면 서버에 이메일 설정이 필요합니다.
-                <br />
-                대신 위의 클립보드 복사 기능을 사용해보세요!
-              </p> */}
+              <p className="email-notice">📧 요약본을 이메일로 전송해보세요!</p>
               <div className="email-form">
                 <input
                   type="email"
@@ -995,7 +699,7 @@ const AudioRecorder = () => {
                   onClick={sendSummaryEmail}
                   className="send-email-btn"
                   disabled={isSendingEmail || !emailAddress}>
-                  {isSendingEmail ? "전송 중..." : "이메일 전송"}
+                  {isSendingEmail ? "전송 중..." : "📧 이메일 전송"}
                 </button>
               </div>
               {emailSent && (
@@ -1008,46 +712,42 @@ const AudioRecorder = () => {
         </div>
       )}
 
-      {uploadResult && (
-        <div className="upload-result">
-          <h3>업로드 성공!</h3>
-          <p>
-            <strong>파일명:</strong> {uploadResult.data.fileName}
-          </p>
-          <p>
-            <strong>크기:</strong>{" "}
-            {(uploadResult.data.fileSize / 1024 / 1024).toFixed(2)} MB
-          </p>
-          <p>
-            <strong>업로드 시간:</strong>{" "}
-            {new Date(uploadResult.data.uploadTime).toLocaleString()}
-          </p>
-          <p>
-            <strong>S3 URL:</strong>
-          </p>
-          <a
-            href={uploadResult.data.s3Url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="s3-link">
-            {uploadResult.data.s3Url}
-          </a>
+      {/* 로딩 상태들 */}
+      {isUploading && (
+        <div className="uploading">
+          <p>☁️ S3에 업로드 중...</p>
+          <div className="spinner"></div>
         </div>
       )}
 
-      {/* <div className="instructions">
-        <h3>사용 방법:</h3>
-        <ol>
-          <li>"녹음 시작" 버튼을 클릭하여 마이크 권한을 허용하세요</li>
-          <li>음성을 녹음하세요</li>
-          <li>"녹음 중지" 버튼을 클릭하여 녹음을 완료하세요</li>
-          <li>재생하여 확인한 후:</li>
-          <ul>
-            <li>"파일 다운로드": 로컬에 파일 저장</li>
-            <li>"S3에 업로드": AWS S3 버킷에 파일 업로드</li>
-          </ul>
-        </ol>
-      </div> */}
+      {isSummarizing && (
+        <div className="summarizing">
+          <p>🤖 Claude AI로 요약 생성 중...</p>
+          <div className="spinner"></div>
+        </div>
+      )}
+
+      {isSendingEmail && (
+        <div className="sending-email">
+          <p>📧 이메일 전송 중...</p>
+          <div className="spinner"></div>
+        </div>
+      )}
+
+      {isTranscribingFile && (
+        <div className="transcribing">
+          <p>🎵 예시 음성 파일을 텍스트로 변환 중...</p>
+          <div className="spinner"></div>
+        </div>
+      )}
+
+      {uploadResult && (
+        <div className="upload-result">
+          <h3>☁️ 업로드 성공!</h3>
+          <p><strong>파일명:</strong> {uploadResult.data.fileName}</p>
+          <p><strong>크기:</strong> {(uploadResult.data.fileSize / 1024 / 1024).toFixed(2)} MB</p>
+        </div>
+      )}
     </div>
   );
 };
