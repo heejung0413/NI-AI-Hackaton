@@ -885,3 +885,202 @@
   font-weight: 600;
   color: #495057;
 }
+
+/* 화자 정보 표시 스타일 */
+.speaker-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  border: 2px solid #9c27b0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.current-speaker {
+  color: #6a1b9a;
+  background-color: rgba(156, 39, 176, 0.1);
+  padding: 6px 12px;
+  border-radius: 15px;
+  border: 1px solid #ba68c8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.current-speaker::before {
+  content: "👤";
+  font-size: 16px;
+}
+
+.total-speakers {
+  color: #4527a0;
+  background-color: rgba(103, 58, 183, 0.1);
+  padding: 6px 12px;
+  border-radius: 15px;
+  border: 1px solid #9575cd;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.total-speakers::before {
+  content: "👥";
+  font-size: 16px;
+}
+
+.current-pitch {
+  color: #d84315;
+  background-color: rgba(255, 87, 34, 0.1);
+  padding: 6px 12px;
+  border-radius: 15px;
+  border: 1px solid #ff8a65;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.current-pitch::before {
+  content: "🎵";
+  font-size: 16px;
+}
+
+/* 화자 프로필 스타일 */
+.speaker-profiles {
+  background: linear-gradient(135deg, #fff3e0, #fce4ec);
+  border: 2px solid #ff9800;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.speaker-profiles h4 {
+  color: #e65100;
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.profile-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.profile-item {
+  background-color: rgba(255, 152, 0, 0.1);
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profile-speaker {
+  color: #bf360c;
+  font-weight: 600;
+}
+
+.profile-pitch {
+  color: #d84315;
+  background-color: rgba(216, 67, 21, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.profile-samples {
+  color: #795548;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* 상태 헤더 스타일링 */
+.status-header {
+  margin-bottom: 15px;
+}
+
+.status-header > p {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2e7d32;
+  text-align: center;
+}
+
+/* 실시간 음성 인식 상태 개선 */
+.real-time-status {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 2px solid #6c757d;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+}
+
+/* 화자별 텍스트 구분을 위한 스타일 */
+.final-text {
+  margin-bottom: 10px;
+}
+
+.final-text .confirmed-text {
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+
+.interim-text {
+  margin-top: 5px;
+}
+
+/* 화자 변경 시 애니메이션 */
+.speaker-info.changing {
+  animation: speaker-change 0.5s ease-in-out;
+}
+
+@keyframes speaker-change {
+  0% {
+    transform: scale(1);
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  }
+  50% {
+    transform: scale(1.02);
+    background: linear-gradient(135deg, #fff3e0, #fce4ec);
+  }
+  100% {
+    transform: scale(1);
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  }
+}
+
+/* 화자별 색상 구분 */
+.speaker-segment-1 .confirmed-text {
+  border-left-color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.08);
+}
+
+.speaker-segment-2 .confirmed-text {
+  border-left-color: #2196f3;
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+.speaker-segment-3 .confirmed-text {
+  border-left-color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.08);
+}
+
+.speaker-segment-4 .confirmed-text {
+  border-left-color: #9c27b0;
+  background-color: rgba(156, 39, 176, 0.08);
+}
+
+.speaker-segment-5 .confirmed-text {
+  border-left-color: #f44336;
+  background-color: rgba(244, 67, 54, 0.08);
+}
