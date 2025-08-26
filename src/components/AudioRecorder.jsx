@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import "./AudioRecorder.css";
 import exampleAudioFile from "../assets/Example-Recorded-Conference.mp3";
+import logo from "../assets/officevoice-logo.svg";
 
 const AudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -595,7 +596,8 @@ const AudioRecorder = () => {
 
   return (
     <div className="audio-recorder">
-      <h2>🎙️ 실시간 음성 인식기</h2>
+      <img src={logo} alt="NI Logo" className="ni-logo" />
+      <h2>🎙️ AI 실시간 음성 인식기</h2>
 
       <div className="recorder-controls">
         <button

@@ -10,6 +10,8 @@
   text-align: center;
   color: #333;
   margin-bottom: 30px;
+  font-size: 16px;
+  margin-top: 0;
 }
 
 .recorder-controls {
@@ -401,6 +403,11 @@
   margin-top: 20px;
 }
 
+.ni-logo {
+  width: 200px;
+  height: auto;
+}
+
 .share-section h4 {
   color: #333;
   margin-top: 0;
@@ -524,7 +531,7 @@
 }
 
 .office-mail-btn {
-  background: #0078D4;
+  background: #0078d4;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -538,7 +545,7 @@
 }
 
 .office-mail-btn:hover {
-  background: #106EBE;
+  background: #106ebe;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
 }
@@ -709,7 +716,7 @@
 }
 
 .clear-btn {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 

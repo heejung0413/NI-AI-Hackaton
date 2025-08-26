@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="200" viewBox="0 0 800 200">
+  <!-- Text-only logo: change fill to adjust color, font-family to your brand font -->
+  <text x="0" y="150"
+        font-family="Inter, Pretendard, 'Noto Sans KR', 'Segoe UI', Arial, sans-serif"
+        font-weight="700"
+        font-size="150"
+        letter-spacing="0"
+        fill="#3A32D6">OfficeVoice</text>
+</svg>
