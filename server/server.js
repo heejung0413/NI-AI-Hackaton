@@ -24,6 +24,8 @@ app.use(
       "http://localhost:5173",
       "http://ec2-13-125-174-173.ap-northeast-2.compute.amazonaws.com",
       "https://ec2-13-125-174-173.ap-northeast-2.compute.amazonaws.com",
+      "http://ec2-54-90-225-252.compute-1.amazonaws.com",
+      "https://ec2-54-90-225-252.compute-1.amazonaws.com",
       "https://ni-ai-hackaton-m71ifipus-heejung0413s-projects.vercel.app",
       "https://ni-ai-hackaton-1ms92zder-heejung0413s-projects.vercel.app",
     ],
@@ -218,18 +220,20 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
     });
 
     // 예시 오디오 파일인지 확인
-    const isExampleFile = req.file.originalname.includes("Example-Recorded-Conference");
-    
+    const isExampleFile = req.file.originalname.includes(
+      "Example-Recorded-Conference"
+    );
+
     console.log("Claude AI를 사용하여 음성 내용 생성 중...");
-    
+
     try {
       // Claude AI가 실제 음성 변환처럼 현실적인 텍스트를 생성하도록 요청
       const message = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: "claude-3-haiku-20240307",
         max_tokens: 2000,
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: `당신은 음성 인식 AI입니다. 다음 음성 파일을 분석하여 텍스트로 변환해주세요.
 
 파일 정보:
@@ -238,7 +242,11 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
 - 파일 타입: ${req.file.mimetype}
 - 녹음 길이: 약 ${Math.floor(req.file.size / 16000)}초
 
-이 파일은 ${isExampleFile ? '예시 비즈니스 회의 녹음본' : '실제 녹음된 음성 파일'}입니다.
+이 파일은 ${
+              isExampleFile
+                ? "예시 비즈니스 회의 녹음본"
+                : "실제 녹음된 음성 파일"
+            }입니다.
 
 음성 변환 요구사항:
 1. 실제 음성을 텍스트로 변환한 것처럼 자연스러운 대화체
@@ -251,14 +259,17 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
 5. 한국어 비즈니스 회의 내용 (프로젝트, 일정, 예산 등)
 6. 400-600단어 분량
 
-실제 음성 인식 결과처럼 자연스럽고 현실적으로 변환해주세요.`
-          }
-        ]
+실제 음성 인식 결과처럼 자연스럽고 현실적으로 변환해주세요.`,
+          },
+        ],
       });
 
       const generatedText = message.content[0].text;
-      
-      console.log("Claude AI 응답 성공:", generatedText.substring(0, 100) + "...");
+
+      console.log(
+        "Claude AI 응답 성공:",
+        generatedText.substring(0, 100) + "..."
+      );
 
       res.json({
         success: true,
@@ -268,39 +279,19 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
           fileName: req.file.originalname,
           method: "claude_ai_speech_to_text",
           fileSize: req.file.size,
-          transcriptionNote: "Claude AI로 음성을 텍스트로 변환한 결과입니다."
+          transcriptionNote: "Claude AI로 음성을 텍스트로 변환한 결과입니다.",
         },
       });
-
     } catch (claudeError) {
       console.error("Claude AI 오류:", claudeError);
-      
+
       // Claude API 실패 시 실제 음성 변환처럼 자연스러운 기본 텍스트 반환
       console.log("Claude API 실패 - 기본 음성 변환 텍스트 반환");
-      const defaultMeetingText = `[화자 1] 네, 안녕하세요. 어... 김철수입니다. 오늘 주간 회의를 시작하도록 하겠습니다. 
+      const defaultMeetingText = `[화자 1] 이번주 목표는 세 기능의 프로토타입을 완성하는 겁니다 
 
-[화자 1] 먼저 어... 프로젝트 진행 상황부터 말씀드리겠습니다. 현재 저희가 진행하고 있는 AI 플랫폼 프로젝트가 음... 전체 일정의 68프로 정도 완료된 상황입니다.
+[화자 2] 디자인 시아는 어제 다 나려움이 있다고 들 왔으니 오늘부터 개발에 투입할 수 있습니다 
 
-[화자 2] 네, 백엔드 쪽은 예정보다 3일 정도 빨리 끝났어요.
-
-[화자 1] 맞습니다. 그래서... 다만 프론트엔드 쪽에서 UI 디자인 수정 요청이 들어와서 최종 배포가 일주일 정도... 음, 지연될 것 같습니다.
-
-[화자 3] 예산 얘기도 해야겠네요. 3분기까지 74퍼센트 집행했고요.
-
-[화자 1] 네, 맞습니다. 예산 얘기를... 3분기까지 74% 집행하고 남은 26%로는 4분기 마케팅 캠페인이랑 서버 인프라 확장을 할 예정입니다. 특히 클라우드 비용이 예상보다 15% 절약되어서... 음, 보안 강화 작업도 추가로 진행할 수 있을 것 같아요.
-
-[화자 2] 아, 그리고 팀 확장 건은 어떻게 되나요?
-
-[화자 1] 네, 팀 확장요. 다음 달부터 시니어 개발자 2명하고 데이터 사이언티스트 1명 채용을 시작합니다. 면접은... 음, 다음 주 화요일부터 진행 예정이고요. 온보딩 프로그램도 같이 준비하고 있어요.
-
-[화자 3] 고객 만족도는 어떻게 나왔어요?
-
-[화자 1] 아, 고객 만족도 조사 결과요. 이번 분기 평균 4.3점으로 지난 분기보다 0.4점 올랐습니다. 특히 고객 지원 응답 시간이 평균 2시간으로 단축되어서... 네, 높은 만족도를 받았어요.
-
-[화자 1] 다른 질문이나 의견 있으시면... 네, 말씀해 주시고요. 다음 회의는 2주 후 같은 시간에 하겠습니다. 수고하셨습니다.
-
-[화자 2] 네, 수고하셨습니다.`;
-
+[화자 3] 저는 테스트 환경을 세팅해 둘게요. 5까지 완료하겠습니다`;
 
       res.json({
         success: true,
@@ -310,11 +301,10 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
           fileName: req.file.originalname,
           method: "fallback_speech_to_text",
           transcriptionNote: "기본 음성 변환 결과입니다.",
-          claude_error: claudeError.message
+          claude_error: claudeError.message,
         },
       });
     }
-
   } catch (error) {
     console.error("음성 변환 오류:", error);
     res.status(500).json({

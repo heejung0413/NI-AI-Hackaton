@@ -411,11 +411,8 @@ const AudioRecorder = () => {
     setSummary(null);
 
     try {
-      const isOnEC2 =
-        window.location.hostname.includes("ec2-") ||
-        window.location.hostname.includes("compute.amazonaws.com");
-      const apiUrl = isOnEC2
-        ? "/api/summarize-audio"
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? `${import.meta.env.VITE_API_URL}/api/summarize-audio`
         : "http://localhost:3001/api/summarize-audio";
 
       const response = await fetch(apiUrl, {
@@ -486,11 +483,8 @@ const AudioRecorder = () => {
     setEmailSent(false);
 
     try {
-      const isOnEC2 =
-        window.location.hostname.includes("ec2-") ||
-        window.location.hostname.includes("compute.amazonaws.com");
-      const apiUrl = isOnEC2
-        ? "/api/send-summary-email"
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? `${import.meta.env.VITE_API_URL}/api/send-summary-email`
         : "http://localhost:3001/api/send-summary-email";
 
       const response = await fetch(apiUrl, {
@@ -564,11 +558,8 @@ const AudioRecorder = () => {
       const formData = new FormData();
       formData.append("audio", blob, "Example-Recorded-Conference.mp3");
 
-      const isOnEC2 =
-        window.location.hostname.includes("ec2-") ||
-        window.location.hostname.includes("compute.amazonaws.com");
-      const apiUrl = isOnEC2
-        ? "/api/transcribe-audio"
+      const apiUrl = import.meta.env.VITE_API_URL 
+        ? `${import.meta.env.VITE_API_URL}/api/transcribe-audio`
         : "http://localhost:3001/api/transcribe-audio";
 
       const transcribeResponse = await fetch(apiUrl, {
