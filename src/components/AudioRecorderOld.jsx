@@ -79,9 +79,9 @@ const AudioRecorder = () => {
       recognition.interimResults = true;
       recognition.lang = "ko-KR";
       recognition.maxAlternatives = 3; // 5에서 3으로 줄임
-      
+
       // 추가 최적화 설정
-      if ('webkitSpeechRecognition' in window) {
+      if ("webkitSpeechRecognition" in window) {
         // Chrome/Edge 전용 설정
         try {
           recognition.audioTrack = true;
@@ -120,7 +120,11 @@ const AudioRecorder = () => {
         // 오디오가 시작되면 무음 타이머 시작 (30초로 연장)
         noSpeechTimeout = setTimeout(() => {
           console.log("⏰ 30초간 음성 없음 - 재시작 시도");
-          if (recognition && isRecording && restartAttempts < maxRestartAttempts) {
+          if (
+            recognition &&
+            isRecording &&
+            restartAttempts < maxRestartAttempts
+          ) {
             try {
               console.log("자동 재시작 중...");
               recognition.stop();
@@ -976,7 +980,7 @@ const AudioRecorder = () => {
             {/* 클립보드 복사 */}
             <div className="copy-section">
               <button onClick={copyToClipboard} className="copy-btn">
-                📋 클립보드에 복사
+                📋 클립보드에 복사ㄴㄴ
               </button>
               {copied && (
                 <span className="copy-success">✅ 복사되었습니다!</span>

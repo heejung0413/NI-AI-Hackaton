@@ -11,6 +11,37 @@ const Anthropic = require("@anthropic-ai/sdk");
 const nodemailer = require("nodemailer");
 // OpenAI 의존성 제거
 
+// 마크다운을 HTML로 변환하는 함수 (이메일 클라이언트 호환)
+function convertMarkdownToHtml(markdown) {
+  if (!markdown) return "";
+  
+  let html = markdown;
+  
+  // 1. 이모지 + 볼드 조합을 가장 간단하게 변환
+  html = html.replace(/(📌|📝|💡|🎯|✅|🔍|📋|🚀|💼|📊|⭐|🎉)\s*\*\*(.*?)\*\*/g, 
+    '<h3>$1 $2</h3>');
+  
+  // 2. 일반 볼드체
+  html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+  
+  // 3. 기울임체
+  html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
+  
+  // 4. 리스트를 간단하게 처리
+  html = html.replace(/^[•\-] (.*)$/gm, '• $1<br>');
+  
+  // 5. 해시태그를 간단하게
+  html = html.replace(/#([가-힣a-zA-Z0-9_]+)/g, '<b>#$1</b>');
+  
+  // 6. 구분선
+  html = html.replace(/^---$/gm, '<hr>');
+  
+  // 7. 줄바꿈을 <br>로
+  html = html.replace(/\n/g, '<br>');
+  
+  return html;
+}
+
 // 환경 변수 로드
 dotenv.config();
 
@@ -336,6 +367,7 @@ app.post("/api/send-summary-email", async (req, res) => {
     }
 
     // HTML 형식의 이메일 본문 생성
+
     const htmlContent = `
       <div style="font-family: 'Noto Sans KR', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2e7d32; border-bottom: 2px solid #4caf50; padding-bottom: 10px;">
@@ -354,23 +386,10 @@ app.post("/api/send-summary-email", async (req, res) => {
 
         <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h2 style="color: #2e7d32; margin-top: 0;">📊 AI 요약</h2>
-          <div style="white-space: pre-wrap; line-height: 1.8;">
-${summary}
+          <div style="line-height: 1.8; color: #333;">
+            ${convertMarkdownToHtml(summary)}
           </div>
         </div>
-
-        ${
-          originalText
-            ? `
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #495057; margin-top: 0;">📝 원본 텍스트</h3>
-          <p style="color: #666; line-height: 1.6; white-space: pre-wrap;">
-${originalText}
-          </p>
-        </div>
-        `
-            : ""
-        }
 
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
           <p style="color: #999; font-size: 12px;">

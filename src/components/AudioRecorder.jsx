@@ -751,10 +751,14 @@ const AudioRecorder = () => {
             </p>
             <div className="transcript-actions">
               <button
-                onClick={() => setTranscriptText("")}
+                onClick={() => {
+                  navigator.clipboard.writeText(transcriptText);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
                 className="clear-btn"
                 disabled={!transcriptText}>
-                🗑️ 지우기
+                {copied ? "✅ 복사됨!" : "📋 복사하기"}
               </button>
             </div>
           </div>
@@ -819,15 +823,18 @@ const AudioRecorder = () => {
                   disabled={isSendingEmail || !emailAddress}>
                   {isSendingEmail ? "전송 중..." : "📧 이메일 전송"}
                 </button>
-                <button
-                  onClick={() => window.open('https://app.officemail.io', '_blank')}
-                  className="office-mail-btn">
-                  🏢 오피스메일로 이동하기
-                </button>
               </div>
               {emailSent && (
                 <div className="email-success">
-                  ✅ 이메일이 성공적으로 전송되었습니다!
+                  <p>✅ 이메일이 성공적으로 전송되었습니다!</p>
+                  <button
+                    onClick={() =>
+                      window.open("https://app.officemail.io", "_blank")
+                    }
+                    className="office-mail-btn"
+                    style={{marginTop: "10px"}}>
+                    🏢 오피스메일로 이동하기
+                  </button>
                 </div>
               )}
             </div>
