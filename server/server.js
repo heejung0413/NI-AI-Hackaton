@@ -289,7 +289,7 @@ app.post("/api/transcribe-audio", upload.single("audio"), async (req, res) => {
       console.log("Claude API 실패 - 기본 음성 변환 텍스트 반환");
       const defaultMeetingText = `[화자 1] 이번주 목표는 세 기능의 프로토타입을 완성하는 겁니다 
 
-[화자 2] 디자인 시아는 어제 다 나려움이 있다고 들 왔으니 오늘부터 개발에 투입할 수 있습니다 
+[화자 2] 디자인 시안은 어제 다 나왔으니 오늘부터 개발에 투입할 수 있습니다 
 
 [화자 3] 저는 테스트 환경을 세팅해 둘게요. 5까지 완료하겠습니다`;
 
@@ -346,7 +346,8 @@ app.post("/api/send-summary-email", async (req, res) => {
           <p style="margin: 0; color: #666;">
             <strong>파일명:</strong> ${audioFileName || "음성 녹음"}<br>
             <strong>요약 생성 시간:</strong> ${new Date().toLocaleString(
-              "ko-KR"
+              "ko-KR",
+              { timeZone: "Asia/Seoul" }
             )}
           </p>
         </div>

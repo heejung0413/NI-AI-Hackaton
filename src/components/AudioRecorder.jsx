@@ -84,7 +84,9 @@ const AudioRecorder = () => {
 
   // 개선된 음성 인식 시작
   const startSpeechRecognition = () => {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+    if (
+      !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
+    ) {
       setError(
         "이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저를 사용해주세요."
       );
@@ -181,9 +183,9 @@ const AudioRecorder = () => {
           };
 
           // 기존 segments 상태에 추가
-          setSpeakerSegments(prevSegments => {
+          setSpeakerSegments((prevSegments) => {
             const updatedSegments = [...prevSegments, newSegment];
-            
+
             // 전체 텍스트 업데이트 (모든 화자의 대화 포함)
             const fullText = updatedSegments
               .map((seg) => `[화자 ${seg.speaker}] ${seg.text}`)
@@ -191,7 +193,7 @@ const AudioRecorder = () => {
 
             setFinalText(fullText);
             setTranscriptText(fullText);
-            
+
             return updatedSegments;
           });
         } else if (!result.isFinal && transcript) {
@@ -411,7 +413,7 @@ const AudioRecorder = () => {
     setSummary(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL 
+      const apiUrl = import.meta.env.VITE_API_URL
         ? `${import.meta.env.VITE_API_URL}/api/summarize-audio`
         : "http://localhost:3001/api/summarize-audio";
 
@@ -483,7 +485,7 @@ const AudioRecorder = () => {
     setEmailSent(false);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL 
+      const apiUrl = import.meta.env.VITE_API_URL
         ? `${import.meta.env.VITE_API_URL}/api/send-summary-email`
         : "http://localhost:3001/api/send-summary-email";
 
@@ -558,7 +560,7 @@ const AudioRecorder = () => {
       const formData = new FormData();
       formData.append("audio", blob, "Example-Recorded-Conference.mp3");
 
-      const apiUrl = import.meta.env.VITE_API_URL 
+      const apiUrl = import.meta.env.VITE_API_URL
         ? `${import.meta.env.VITE_API_URL}/api/transcribe-audio`
         : "http://localhost:3001/api/transcribe-audio";
 
@@ -568,23 +570,11 @@ const AudioRecorder = () => {
       });
 
       if (!transcribeResponse.ok) {
-        const defaultText = `[화자 1] 안녕하세요, 저는 김철수 팀장입니다. 오늘 회의의 주요 안건은 다음과 같습니다.
+        const defaultText = `[화자 1] 이번주 목표는 세 기능의 프로토타입을 완성하는 겁니다 
 
-[화자 1] 첫째, 신규 프로젝트 진행 상황입니다. 현재 프로젝트는 전체 일정의 65% 정도 진행되었으며, 개발팀은 핵심 기능 구현을 완료했습니다.
+[화자 2] 디자인 시안은 어제 다 나왔으니 오늘부터 개발에 투입할 수 있습니다 
 
-[화자 2] 네, 그런데 UI/UX 팀에서 디자인 수정 요청이 있어서 일정이 약 일주일 정도 지연될 것 같습니다.
-
-[화자 1] 둘째, 예산 집행 현황입니다. 3분기까지 전체 예산의 72%가 집행되었으며, 남은 예산으로 4분기 마케팅 캠페인과 인프라 확장을 진행할 예정입니다.
-
-[화자 3] 인력 충원은 어떻게 진행되고 있나요?
-
-[화자 1] 셋째, 인력 충원 계획입니다. 백엔드 개발자 2명과 데이터 분석가 1명을 추가로 채용할 예정이며, 다음 주부터 면접을 시작할 계획입니다.
-
-[화자 1] 마지막으로 고객 피드백 분석 결과를 공유드리겠습니다. 전반적인 만족도는 4.2점으로 전분기 대비 0.3점 상승했습니다.
-
-[화자 2] 고객 지원 서비스 개선이 효과가 있었던 것 같네요.
-
-[화자 1] 질문이 있으시면 말씀해 주세요. 없으시다면 다음 회의는 2주 후 같은 시간에 진행하겠습니다. 감사합니다.`;
+[화자 3] 저는 테스트 환경을 세팅해 둘게요. 5까지 완료하겠습니다`;
 
         setTranscriptText(defaultText.trim());
         setIsTranscribingFile(false);
@@ -743,7 +733,7 @@ const AudioRecorder = () => {
               onClick={summarizeWithClaude}
               className="summarize-btn"
               disabled={isSummarizing || !transcriptText.trim()}>
-              🤖 Claude AI 요약
+              🤖 AI 요약
             </button>
             <button onClick={resetRecording} className="reset-btn">
               🔄 새 녹음
@@ -835,7 +825,7 @@ const AudioRecorder = () => {
 
       {isSummarizing && (
         <div className="summarizing">
-          <p>🤖 Claude AI로 요약 생성 중...</p>
+          <p>🤖 AI 요약 생성 중...</p>
           <div className="spinner"></div>
         </div>
       )}
