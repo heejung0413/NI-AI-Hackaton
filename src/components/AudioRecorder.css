@@ -1,10 +1,9 @@
 .audio-recorder {
+  min-height: 100%;
   max-width: 100%;
   margin: 0 auto;
   padding: 20px;
-  background-color: #f5f5f5;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .audio-recorder h2 {
@@ -522,6 +521,26 @@
 .send-email-btn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.office-mail-btn {
+  background: #0078D4;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.office-mail-btn:hover {
+  background: #106EBE;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
 }
 
 .email-success {

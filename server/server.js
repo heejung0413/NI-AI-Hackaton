@@ -353,7 +353,7 @@ app.post("/api/send-summary-email", async (req, res) => {
         </div>
 
         <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h2 style="color: #2e7d32; margin-top: 0;">📊 Claude AI 요약</h2>
+          <h2 style="color: #2e7d32; margin-top: 0;">📊 AI 요약</h2>
           <div style="white-space: pre-wrap; line-height: 1.8;">
 ${summary}
           </div>

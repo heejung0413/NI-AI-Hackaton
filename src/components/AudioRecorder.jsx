@@ -451,9 +451,7 @@ const AudioRecorder = () => {
     try {
       const textToCopy = `🎙️ 음성 녹음 요약본\n\n${
         summary.summary
-      }\n\n📝 원본 텍스트:\n${summary.originalText}\n\n⏰ 처리 시간: ${new Date(
-        summary.processedAt
-      ).toLocaleString()}`;
+      }\n\n⏰ 처리 시간: ${new Date(summary.processedAt).toLocaleString()}`;
 
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -721,13 +719,7 @@ const AudioRecorder = () => {
 
           <div className="audio-controls">
             <button onClick={downloadAudio} className="download-btn">
-              📁 파일 다운로드
-            </button>
-            <button
-              onClick={loadExampleAudio}
-              className="example-btn"
-              disabled={isTranscribingFile || isSummarizing}>
-              {isTranscribingFile ? "변환 중..." : "🎵 예시 녹음본"}
+              📁 녹음 파일 다운로드
             </button>
             <button
               onClick={summarizeWithClaude}
@@ -773,7 +765,30 @@ const AudioRecorder = () => {
       {summary && (
         <div className="summary-section">
           <h3>🤖 AI 요약:</h3>
-          <div className="summary-text">{summary.summary}</div>
+          <div
+            className="summary-text"
+            dangerouslySetInnerHTML={{
+              __html: summary.summary
+                // 마크다운의 **텍스트** 또는 __텍스트__ 를 <strong>텍스트</strong>로 변환
+                .replace(/(\*\*|__)(.*?)\1/g, "<strong>$2</strong>")
+                // 마크다운의 *텍스트* 또는 _텍스트_ 를 <em>텍스트</em>로 변환 (굵게 처리된 것 제외)
+                .replace(/(\*|_)(.*?)\1/g, "<em>$2</em>")
+                // 마크다운의 `코드`를 <code>코드</code>로 변환
+                .replace(/`([^`]+)`/g, "<code>$1</code>")
+                // 마크다운의 --- 또는 *** 구분선을 <hr>로 변환
+                .replace(/(^|\n)(---|\*\*\*)(\n|$)/g, "<hr>")
+                // 마크다운의 번호 없는 리스트(-, *, +)를 <ul><li>...</li></ul>로 변환 (간단 버전)
+                .replace(
+                  /(?:^|\n)[\-\*\+]\s(.+)/g,
+                  (match, p1) => `<li>${p1}</li>`
+                )
+                // 여러 <li>가 연속되면 <ul>로 감싸기
+                .replace(
+                  /(<li>[\s\S]+?<\/li>)/g,
+                  (match) => `<ul>${match}</ul>`
+                ),
+            }}
+          />
 
           <div className="share-section">
             <h4>📤 요약본 공유하기</h4>
@@ -803,6 +818,11 @@ const AudioRecorder = () => {
                   className="send-email-btn"
                   disabled={isSendingEmail || !emailAddress}>
                   {isSendingEmail ? "전송 중..." : "📧 이메일 전송"}
+                </button>
+                <button
+                  onClick={() => window.open('https://app.officemail.io', '_blank')}
+                  className="office-mail-btn">
+                  🏢 오피스메일로 이동하기
                 </button>
               </div>
               {emailSent && (
